@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360 Panoramic Image Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #container {
+            width: 100vw;
+            height: 100vh;
+        }
+        #upload {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="upload" accept="image/*" />
+    <div id="container"></div>
+
+    <!-- Include Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Include Panolens.js -->
+    <script src="https://cdn.jsdelivr.net/npm/panolens@0.11.1/build/panolens.min.js"></script>
+
+    <script>
+        document.getElementById('upload').addEventListener('change', handleFileSelect, false);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const imageUrl = e.target.result;
+
+                // Clear previous content
+                const container = document.getElementById('container');
+                container.innerHTML = '';
+
+                // Create Panolens Viewer
+                const viewer = new PANOLENS.Viewer({ container: container });
+                const panorama = new PANOLENS.ImagePanorama(imageUrl);
+
+                // Add panorama to the viewer
+                viewer.add(panorama);
+            };
+
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>
