@@ -1,0 +1,61 @@
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link rel="stylesheet" href="home.css"></link>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
+    <script>
+        let map;
+        let geocoder;
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: {lat: -34.397, lng: 150.644},
+                zoom: 8
+            });
+            geocoder = new google.maps.Geocoder();
+        }
+
+        function geocodeAddress() {
+            const address = document.getElementById('address').value;
+            geocoder.geocode({'address': address}, function(results, status) {
+                if (status === 'OK') {
+                    map.setCenter(results[0].geometry.location);
+                    new google.maps.Marker({
+                        map: map,
+                        position: results[0].geometry.location
+                    });
+                } else {
+                    alert('Geocode was not successful for the following reason: ' + status);
+                }
+            });
+        }
+    </script>
+    </head>
+    <body>
+        <title>Amuz 360</title>
+        <section class="fileentry">
+            <label for="panoramic">Drop your panoramic photos here to turn them into a 360 video</label><br>
+            <form action="/upload" method="post" enctype="multipart/form-data">
+                <label for="photo">Upload Photo:</label>
+                <input type="file" id="photo" name="photo" accept="image/*">
+                
+                <input type="submit" value="Upload">
+            </form>
+        </section>
+        <section class="bloginput">
+            <label for="blog">Write your blog below!</label>
+            <textarea id="blog" name="blog" rows="4" cols="50"></textarea><br> 
+        </section>
+
+        <section class="map">
+            <h3>Enter your location:</h3>
+            <input type="text" id="address" placeholder="Enter a location">
+            <button onclick="geocodeAddress()">Get Location</button>
+            <div id="map"></div>
+        </section>
+
+    </body>
+</html>
