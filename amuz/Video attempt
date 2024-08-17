@@ -1,0 +1,252 @@
+<?php
+// Ensure that the uploads directory exists
+$upload_dir = __DIR__ . "/uploads/" . date("Y-m-d") . "/";
+if (!is_dir($upload_dir)) {
+    mkdir($upload_dir, 0777, true); // Create directory if it doesn't exist
+}
+
+// Vimeo API credentials
+define('VIMEO_ACCESS_TOKEN', '93ef25bec697b30417d64b38d989affc');
+
+function uploadToVimeo($file_path) {
+    $access_token = VIMEO_ACCESS_TOKEN;
+    $video_url = '';
+
+    $video_data = [
+        'upload' => [
+            'approach' => 'tus',
+            'size' => filesize($file_path)
+        ],
+        'name' => basename($file_path),
+        'description' => 'Uploaded video'
+    ];
+
+    // Step 1: Create a new video on Vimeo
+    $ch = curl_init('https://api.vimeo.com/me/videos');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $access_token,
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($video_data));
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $response_data = json_decode($response);
+    if (isset($response_data->upload->upload_link)) {
+        $upload_link = $response_data->upload->upload_link;
+
+        // Step 2: Upload the video to Vimeo
+        $ch = curl_init($upload_link);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_PUT, true);
+        curl_setopt($ch, CURLOPT_INFILE, fopen($file_path, 'r'));
+        curl_setopt($ch, CURLOPT_INFILESIZE, filesize($file_path));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: video/mp4',
+            'Authorization: Bearer ' . $access_token
+        ]);
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        // Step 3: Check the video status
+        if ($response) {
+            $video_url = $response_data->link;
+        }
+    }
+
+    return $video_url;
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file'])) {
+    $file = $_FILES['file'];
+    $file_path = $upload_dir . basename($file['name']);
+
+    if (move_uploaded_file($file['tmp_name'], $file_path)) {
+        $videoUrl = uploadToVimeo($file_path);
+        if ($videoUrl) {
+            echo json_encode(['url' => $videoUrl]);
+        } else {
+            echo json_encode(['error' => 'Failed to upload video to Vimeo.']);
+        }
+    } else {
+        echo json_encode(['error' => 'Failed to upload file.']);
+    }
+    exit();
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Vimeo Video Upload and Embed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        body {
+            background-color: #2a2a2a;
+            color: #fff;
+        }
+        .wrapper {
+            width: 430px;
+            margin: 100px auto;
+            background: #fff;
+            border-radius: 5px;
+            padding: 30px;
+            box-shadow: 7px 7px 12px rgba(0, 0, 0, 0.05);
+        }
+        .wrapper header {
+            color: #2a2a2a;
+            font-size: 27px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .wrapper form {
+            height: 167px;
+            display: flex;
+            cursor: pointer;
+            margin: 30px 0;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            border-radius: 5px;
+            border: 2px dashed #2a2a2a;
+        }
+        form i {
+            font-size: 50px;
+        }
+        form p {
+            margin-top: 15px;
+            font-size: 16px;
+        }
+        .progress-area, .uploaded-area {
+            margin-top: 20px;
+        }
+        .progress-area .row, .uploaded-area .row {
+            margin-bottom: 10px;
+            background: #e9f0ff;
+            list-style: none;
+            padding: 15px 20px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .progress-area .row i, .uploaded-area .row i {
+            color: #2a2a2a;
+            font-size: 30px;
+        }
+        .progress-area .details span, .uploaded-area .details span {
+            font-size: 14px;
+        }
+        .progress-area .content .progress-bar {
+            height: 6px;
+            width: 100%;
+            margin-bottom: 4px;
+            background: #fff;
+            border-radius: 30px;
+        }
+        .progress-area .content .progress-bar .progress {
+            height: 100%;
+            width: 0%;
+            background: #2a2a2a;
+            border-radius: inherit;
+        }
+        .uploaded-area .row .details .size {
+            color: #404040;
+            font-size: 11px;
+        }
+        .uploaded-area i.fa-check {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <header>Upload Video to Vimeo</header>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" id="fileInput" name="file" hidden />
+            <i class="fa-solid fa-file-arrow-up"></i>
+            <p>Browse File to Upload</p>
+        </form>
+        <section class="progress-area"></section>
+        <section class="uploaded-area"></section>
+    </div>
+    <script>
+        const form = document.querySelector("#uploadForm"),
+        fileInput = document.querySelector("#fileInput"),
+        progressArea = document.querySelector(".progress-area"),
+        uploadedArea = document.querySelector(".uploaded-area");
+
+        form.addEventListener("click", () => {
+            fileInput.click();
+        });
+
+        fileInput.onchange = ({ target }) => {
+            let file = target.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        };
+
+        function uploadFile(file) {
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", "");
+            xhr.upload.addEventListener("progress", ({ loaded, total }) => {
+                let fileLoaded = Math.floor((loaded / total) * 100);
+                let fileSize = total < 1024 * 1024
+                    ? (total / 1024).toFixed(2) + " KB"
+                    : (total / (1024 * 1024)).toFixed(2) + " MB";
+
+                let progressHTML = `
+                <li class="row">
+                    <i class="fas fa-file-alt"></i>
+                    <div class="content">
+                        <div class="details">
+                            <span class="name">${file.name} * Uploading</span>
+                            <span class="percent">${fileLoaded}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: ${fileLoaded}%"></div>
+                        </div>
+                    </div>
+                </li>`;
+                uploadedArea.classList.add("onprogress");
+                progressArea.innerHTML = progressHTML;
+            });
+
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    let response = JSON.parse(xhr.responseText);
+                    if (response.url) {
+                        progressArea.innerHTML = "";
+                        uploadedArea.innerHTML = `
+                        <li class="row">
+                            <div class="content upload">
+                                <iframe src="${response.url}" width="640" height="360" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                                <div class="details">
+                                    <span class="name">${file.name} * uploaded</span>
+                                </div>
+                            </div>
+                            <i class="fas fa-check"></i>
+                        </li>`;
+                    } else if (response.error) {
+                        progressArea.innerHTML = `<p>Error: ${response.error}</p>`;
+                    }
+                }
+            };
+
+            let data = new FormData();
+            data.append("file", file);
+            xhr.send(data);
+        }
+    </script>
+</body>
+</html>
