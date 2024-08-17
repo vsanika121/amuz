@@ -1,24 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="home.css">
+    <link rel="stylesheet" href="blog.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Amuz 360</title>
     <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
-    <style>
-        /* Set a specific height for the map */
-        #map {
-            height: 400px;
-            width: 100%;
-        }
-        /* Style for the blog title */
-        .blog-title {
-            font-size: 2em;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-    </style>
     <script>
         let map;
         let geocoder;
@@ -62,6 +49,14 @@
             titleElement.textContent = blogTitle;
             blogPostDiv.appendChild(titleElement);
 
+            // Add video content
+            if (blogVideo) {
+                const videoElement = document.createElement('video');
+                videoElement.controls = true;
+                videoElement.src = URL.createObjectURL(blogVideo);
+                blogPostDiv.appendChild(videoElement);
+            }
+
             // Add text content
             const textParagraph = document.createElement('p');
             textParagraph.textContent = blogText;
@@ -74,47 +69,37 @@
                 blogPostDiv.appendChild(imageElement);
             }
 
-            // Add video content
-            if (blogVideo) {
-                const videoElement = document.createElement('video');
-                videoElement.controls = true;
-                videoElement.src = URL.createObjectURL(blogVideo);
-                blogPostDiv.appendChild(videoElement);
-            }
+            // Add location (map) content
+            const mapDiv = document.createElement('div');
+            mapDiv.id = 'map';
+            mapDiv.className = 'blog-map';
+            blogPostDiv.appendChild(mapDiv);
+
+            initMap();
         }
     </script>
 </head>
 <body>
-    <section class="fileentry">
-        <label for="photo">Drop your panoramic photos here to turn them into a 360 video</label><br>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <label for="photo">Upload Photo:</label>
-            <input type="file" id="photo" name="photo" accept="image/*"><br>
-
-            <label for="blog-video">Upload Video:</label>
-            <input type="file" id="blog-video" name="video" accept="video/*"><br>
-
-            <input type="submit" value="Upload">
-        </form>
-    </section>
-
     <section class="bloginput">
         <label for="blog-title">Blog Title:</label>
         <input type="text" id="blog-title" name="title" placeholder="Enter your blog title"><br><br>
 
-        <label for="blog">Write your blog below!</label>
-        <textarea id="blog" name="blog" rows="4" cols="50"></textarea><br>
-        <button onclick="createBlogPost()">Create Blog Post</button>
-    </section>
+        <label for="blog-video">Upload Video:</label>
+        <input type="file" id="blog-video" name="video" accept="video/*"><br><br>
 
-    <section class="map">
-        <h3>Enter your location:</h3>
+        <label for="blog">Write your blog below!</label><br>
+        <textarea id="blog" name="blog" rows="4" cols="50"></textarea><br><br>
+
+        <label for="photo">Upload Photo:</label>
+        <input type="file" id="photo" name="photo" accept="image/*"><br><br>
+
+        <label for="address">Enter your location:</label>
         <input type="text" id="address" placeholder="Enter a location">
-        <button onclick="geocodeAddress()">Get Location</button>
-        <div id="map"></div>
+        <button onclick="geocodeAddress()">Get Location</button><br><br>
+
+        <button onclick="createBlogPost()">Create Blog Post</button>
     </section>
 
     <section id="blog-post"></section>
 </body>
 </html>
-
