@@ -17,8 +17,13 @@ label, input, textarea, button {
     margin-bottom: 20px;
 }
 
+/* Photo and video size */
 #blog-post img, #blog-post video {
-    max-width: 100%;
+    max-width: 10px;
+    max-height: 20px;
+    width: 10px;
+    height: 20px;
+    object-fit: cover;
     margin-bottom: 20px;
 }
 
@@ -43,4 +48,3 @@ button {
     padding: 10px 15px;
     cursor: pointer;
 }
-
