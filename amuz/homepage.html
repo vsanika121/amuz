@@ -32,6 +32,35 @@
                 }
             });
         }
+        function createBlogPost() {
+            const blogText = document.getElementById('blog-text').value;
+            const blogImage = document.getElementById('blog-image').files[0];
+            const blogVideo = document.getElementById('blog-video').files[0];
+            const blogPostDiv = document.getElementById('blog-post');
+            
+            // Clear previous content
+            blogPostDiv.innerHTML = '';
+
+            // Add text content
+            const textParagraph = document.createElement('p');
+            textParagraph.textContent = blogText;
+            blogPostDiv.appendChild(textParagraph);
+
+            // Add image content
+            if (blogImage) {
+                const imageElement = document.createElement('img');
+                imageElement.src = URL.createObjectURL(blogImage);
+                blogPostDiv.appendChild(imageElement);
+            }
+
+            // Add video content
+            if (blogVideo) {
+                const videoElement = document.createElement('video');
+                videoElement.controls = true;
+                videoElement.src = URL.createObjectURL(blogVideo);
+                blogPostDiv.appendChild(videoElement);
+            }
+        }
     </script>
     </head>
     <body>
