@@ -38,6 +38,7 @@
             const blogText = document.getElementById('blog').value;
             const blogImage = document.getElementById('photo').files[0];
             const blogVideo = document.getElementById('blog-video').files[0];
+            const address = document.getElementById('address').value;
             const blogPostDiv = document.getElementById('blog-post');
             
             // Clear previous content
@@ -54,6 +55,8 @@
                 const videoElement = document.createElement('video');
                 videoElement.controls = true;
                 videoElement.src = URL.createObjectURL(blogVideo);
+                videoElement.style.width = '640px';  // Set the width of the video
+                videoElement.style.height = '360px';  // Set the height of the video
                 blogPostDiv.appendChild(videoElement);
             }
 
@@ -66,6 +69,8 @@
             if (blogImage) {
                 const imageElement = document.createElement('img');
                 imageElement.src = URL.createObjectURL(blogImage);
+                imageElement.style.width = '320px';  // Set the width of the image
+                imageElement.style.height = 'auto';  // Maintain aspect ratio
                 blogPostDiv.appendChild(imageElement);
             }
 
@@ -76,6 +81,32 @@
             blogPostDiv.appendChild(mapDiv);
 
             initMap();
+
+            // Send the data to Google Sheets
+            sendToGoogleSheets(blogTitle, blogText, address);
+        }
+
+        function sendToGoogleSheets(blogTitle, blogText, address) {
+            const url = "https://script.google.com/macros/s/AKfycbz17KoVhgHOU164l9zqDx8vTJvNp_RS6Z8PiliWHyNzJ5t775b4v9wn8LB0-FZGQmgO_Q/exec";  // Replace with the URL of your deployed Google Apps Script web app
+
+            const data = {
+                blogTitle: blogTitle,
+                blogText: blogText,
+                address: address
+            };
+
+            const params = new URLSearchParams(data);
+
+            fetch(url, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: params
+            })
+            .then(response => console.log("Data sent to Google Sheets"))
+            .catch(error => console.error('Error:', error));
         }
     </script>
 </head>
@@ -103,3 +134,4 @@
     <section id="blog-post"></section>
 </body>
 </html>
+
